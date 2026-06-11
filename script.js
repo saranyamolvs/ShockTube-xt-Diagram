@@ -186,8 +186,8 @@ function scaleFactory(events, width, height, margin) {
   const xMax = events.tubeMax;
 
   return {
-    t: (seconds) => margin.left + (seconds / events.maxTime) * plotWidth,
-    x: (meters) => margin.top + (1 - (meters - xMin) / (xMax - xMin)) * plotHeight,
+    x: (meters) => margin.left + ((meters - xMin) / (xMax - xMin)) * plotWidth,
+    t: (seconds) => margin.top + (1 - seconds / events.maxTime) * plotHeight,
     plotWidth,
     plotHeight,
     xMin,
@@ -196,7 +196,7 @@ function scaleFactory(events, width, height, margin) {
 }
 
 function pathFor(points, scale) {
-  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${scale.t(point.t).toFixed(2)} ${scale.x(point.x).toFixed(2)}`).join(' ');
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${scale.x(point.x).toFixed(2)} ${scale.t(point.t).toFixed(2)}`).join(' ');
 }
 
 function drawAxes(scale, width, height, margin, events) {
@@ -207,41 +207,41 @@ function drawAxes(scale, width, height, margin, events) {
   for (let i = 0; i <= xTicks; i += 1) {
     const fraction = i / xTicks;
     const meters = scale.xMin + fraction * (scale.xMax - scale.xMin);
-    const y = scale.x(meters);
-    axis.append(el('line', { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: 'grid-line' }));
-    axis.append(el('text', { x: margin.left - 10, y: y + 4, 'text-anchor': 'end', class: 'tick-label' }, meters.toFixed(1)));
+    const x = scale.x(meters);
+    axis.append(el('line', { x1: x, y1: margin.top, x2: x, y2: height - margin.bottom, class: 'grid-line' }));
+    axis.append(el('text', { x, y: height - margin.bottom + 22, 'text-anchor': 'middle', class: 'tick-label' }, meters.toFixed(1)));
   }
 
   for (let i = 0; i <= tTicks; i += 1) {
     const seconds = (i / tTicks) * events.maxTime;
-    const x = scale.t(seconds);
-    axis.append(el('line', { x1: x, y1: margin.top, x2: x, y2: height - margin.bottom, class: 'grid-line' }));
-    axis.append(el('text', { x, y: height - margin.bottom + 22, 'text-anchor': 'middle', class: 'tick-label' }, (seconds * 1000).toFixed(1)));
+    const y = scale.t(seconds);
+    axis.append(el('line', { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: 'grid-line' }));
+    axis.append(el('text', { x: margin.left - 10, y: y + 4, 'text-anchor': 'end', class: 'tick-label' }, (seconds * 1000).toFixed(1)));
   }
 
   axis.append(el('line', { x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom, class: 'axis-line' }));
   axis.append(el('line', { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: 'axis-line' }));
-  axis.append(el('text', { x: width / 2, y: height - 18, 'text-anchor': 'middle', class: 'axis-label' }, 'time, t (ms) →'));
-  axis.append(el('text', { x: 22, y: height / 2, transform: `rotate(-90 22 ${height / 2})`, 'text-anchor': 'middle', class: 'axis-label' }, 'distance, x (m) ↑'));
-  axis.append(el('line', { x1: margin.left, y1: scale.x(0), x2: width - margin.right, y2: scale.x(0), class: 'tube-wall' }));
-  axis.append(el('line', { x1: margin.left, y1: scale.x(events.tubeMax), x2: width - margin.right, y2: scale.x(events.tubeMax), class: 'tube-wall' }));
-  axis.append(el('line', { x1: margin.left, y1: scale.x(events.tubeMin), x2: width - margin.right, y2: scale.x(events.tubeMin), class: 'tube-wall' }));
-  axis.append(el('text', { x: width - margin.right, y: scale.x(0) - 8, 'text-anchor': 'end', class: 'tick-label' }, 'diaphragm'));
-  axis.append(el('text', { x: width - margin.right, y: scale.x(events.tubeMax) - 8, 'text-anchor': 'end', class: 'tick-label' }, 'driven end'));
-  axis.append(el('text', { x: width - margin.right, y: scale.x(events.tubeMin) + 18, 'text-anchor': 'end', class: 'tick-label' }, 'driver end'));
+  axis.append(el('text', { x: width / 2, y: height - 18, 'text-anchor': 'middle', class: 'axis-label' }, 'position, x (m) →'));
+  axis.append(el('text', { x: 22, y: height / 2, transform: `rotate(-90 22 ${height / 2})`, 'text-anchor': 'middle', class: 'axis-label' }, 'time, t (ms) ↑'));
+  axis.append(el('line', { x1: scale.x(0), y1: margin.top, x2: scale.x(0), y2: height - margin.bottom, class: 'tube-wall' }));
+  axis.append(el('line', { x1: scale.x(events.tubeMax), y1: margin.top, x2: scale.x(events.tubeMax), y2: height - margin.bottom, class: 'tube-wall' }));
+  axis.append(el('line', { x1: scale.x(events.tubeMin), y1: margin.top, x2: scale.x(events.tubeMin), y2: height - margin.bottom, class: 'tube-wall' }));
+  axis.append(el('text', { x: scale.x(0) + 8, y: margin.top + 18, 'text-anchor': 'start', class: 'tick-label' }, 'diaphragm'));
+  axis.append(el('text', { x: scale.x(events.tubeMax) - 8, y: margin.top + 18, 'text-anchor': 'end', class: 'tick-label' }, 'driven end'));
+  axis.append(el('text', { x: scale.x(events.tubeMin) + 8, y: margin.top + 18, 'text-anchor': 'start', class: 'tick-label' }, 'driver end'));
   return axis;
 }
 
 
-function drawSensorMarkers(data, scale, width, margin) {
+function drawSensorMarkers(data, scale, height, margin) {
   const group = el('g');
   data.sensorLocations
     .filter((location) => location >= -data.L4 && location <= data.L1)
     .forEach((location, index) => {
-      const y = scale.x(location);
+      const x = scale.x(location);
       const color = SENSOR_COLORS[index % SENSOR_COLORS.length];
-      group.append(el('line', { x1: margin.left, y1: y, x2: width - margin.right, y2: y, stroke: color, class: 'sensor-marker' }));
-      group.append(el('text', { x: margin.left + 8, y: y - 6, fill: color, class: 'sensor-label' }, `sensor x=${location} m`));
+      group.append(el('line', { x1: x, y1: margin.top, x2: x, y2: height - margin.bottom, stroke: color, class: 'sensor-marker' }));
+      group.append(el('text', { x: x + 6, y: height - margin.bottom - 8, fill: color, class: 'sensor-label' }, `sensor x=${location} m`));
     });
   return group;
 }
@@ -252,7 +252,7 @@ function drawFan(fan, scale) {
     fan.lines[0].points[0],
     fan.lines[0].points[1],
     fan.lines[2].points[1],
-  ].map((point) => `${scale.t(point.t).toFixed(2)},${scale.x(point.x).toFixed(2)}`).join(' ');
+  ].map((point) => `${scale.x(point.x).toFixed(2)},${scale.t(point.t).toFixed(2)}`).join(' ');
 
   group.append(el('polygon', { points: polygonPoints, class: 'fan-fill' }));
   fan.lines.forEach((line) => {
@@ -260,8 +260,8 @@ function drawFan(fan, scale) {
   });
   const labelPoint = fan.lines[2].points[1];
   group.append(el('text', {
-    x: scale.t(labelPoint.t) - 12,
-    y: scale.x(labelPoint.x) - 10,
+    x: scale.x(labelPoint.x) - 12,
+    y: scale.t(labelPoint.t) - 10,
     'text-anchor': 'end',
     fill: fan.color,
     class: 'wave-label',
@@ -274,8 +274,8 @@ function drawWave(wave, scale) {
   group.append(el('path', { d: pathFor(wave.points, scale), stroke: wave.color, class: 'wave-line' }));
   const labelPoint = wave.points[wave.points.length - 1];
   group.append(el('text', {
-    x: scale.t(labelPoint.t) - 8,
-    y: scale.x(labelPoint.x) - 8,
+    x: scale.x(labelPoint.x) - 8,
+    y: scale.t(labelPoint.t) - 8,
     'text-anchor': 'end',
     fill: wave.color,
     class: 'wave-label',
@@ -459,13 +459,13 @@ function render() {
   const height = 650;
   const margin = { top: 34, right: 32, bottom: 66, left: 74 };
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  svg.innerHTML = '<title id="diagramTitle">Shock tube x-t diagram</title><desc id="diagramDesc">Time is plotted on the horizontal axis and distance is plotted on the vertical axis increasing upward.</desc>';
+  svg.innerHTML = '<title id="diagramTitle">Shock tube x-t diagram</title><desc id="diagramDesc">Position is plotted on the horizontal axis increasing rightward and time is plotted on the vertical axis increasing upward.</desc>';
 
   const events = buildEvents(data);
   const scale = scaleFactory(events, width, height, margin);
 
   svg.append(drawAxes(scale, width, height, margin, events));
-  svg.append(drawSensorMarkers(data, scale, width, margin));
+  svg.append(drawSensorMarkers(data, scale, height, margin));
   svg.append(drawFan(events.fan, scale));
   events.waves.forEach((wave) => svg.append(drawWave(wave, scale)));
 

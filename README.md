@@ -5,7 +5,7 @@ A small browser-based GUI for drawing simplified shock-tube x-t diagrams.
 ## Features
 
 - Interactive inputs for tube lengths, incident shock speed, contact surface speed, expansion fan speeds, and reflected wave speeds.
-- Distance (`x`) is plotted on the vertical axis with values increasing upward; time (`t`) increases to the right.
+- Position (`x`) is plotted on the horizontal axis with values increasing to the right; time (`t`) is plotted on the vertical axis with values increasing upward.
 - Driven-end boundary selector:
   - **Closed end** plots a reflected shock from the driven end.
   - **Open end** plots a reflected expansion wave from the driven end and does not plot a reflected shock.
