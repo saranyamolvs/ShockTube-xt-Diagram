@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shock Tube x-t Diagram Calculator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Shock tube tool</p>
+          <h1>x-t Diagram Calculator</h1>
+          <p class="lede">
+            Plot shock, contact surface, expansion fan, and end-boundary waves with distance on the vertical axis increasing upward.
+          </p>
+        </div>
+        <div class="axis-note" aria-label="Axis orientation note">
+          <span>t →</span>
+          <strong>x ↑</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="controls" class="panel controls" aria-label="Shock tube inputs">
+          <h2>Inputs</h2>
+          <div class="grid two">
+            <label>
+              Driven length, L1 (m)
+              <input id="drivenLength" type="number" min="0.1" step="0.1" value="6" />
+            </label>
+            <label>
+              Driver length, L4 (m)
+              <input id="driverLength" type="number" min="0.1" step="0.1" value="2" />
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Shock speed, Ws (m/s)
+              <input id="shockSpeed" type="number" min="1" step="1" value="650" />
+            </label>
+            <label>
+              Contact speed, Uc (m/s)
+              <input id="contactSpeed" type="number" min="1" step="1" value="360" />
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Expansion head speed (m/s)
+              <input id="expHeadSpeed" type="number" min="1" step="1" value="520" />
+            </label>
+            <label>
+              Expansion tail speed (m/s)
+              <input id="expTailSpeed" type="number" min="1" step="1" value="250" />
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Closed-end reflected shock speed (m/s)
+              <input id="refShockSpeed" type="number" min="1" step="1" value="420" />
+            </label>
+            <label>
+              Open-end reflected expansion speed (m/s)
+              <input id="refExpansionSpeed" type="number" min="1" step="1" value="330" />
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>Driven-end boundary</legend>
+            <label class="radio-row">
+              <input type="radio" name="endType" value="closed" checked />
+              Closed end: reflected shock
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="endType" value="open" />
+              Open end: reflected expansion wave
+            </label>
+          </fieldset>
+
+          <label>
+            Diagram time limit (ms)
+            <input id="timeLimit" type="number" min="1" step="0.5" value="18" />
+          </label>
+
+          <div id="warnings" class="warnings" role="status" aria-live="polite"></div>
+        </form>
+
+        <section class="panel diagram-card">
+          <div class="diagram-header">
+            <div>
+              <h2>x-t diagram</h2>
+              <p id="caseSummary">Closed end selected: reflected shock is plotted.</p>
+            </div>
+            <button id="downloadSvg" type="button">Download SVG</button>
+          </div>
+          <svg id="diagram" role="img" aria-labelledby="diagramTitle diagramDesc">
+            <title id="diagramTitle">Shock tube x-t diagram</title>
+            <desc id="diagramDesc">Time is plotted on the horizontal axis and distance is plotted on the vertical axis increasing upward.</desc>
+          </svg>
+          <div id="legend" class="legend"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
