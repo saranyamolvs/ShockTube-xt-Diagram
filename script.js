@@ -8,6 +8,19 @@ const inputs = {
   refShockSpeed: document.querySelector('#refShockSpeed'),
   refExpansionSpeed: document.querySelector('#refExpansionSpeed'),
   timeLimit: document.querySelector('#timeLimit'),
+  sensorLocations: document.querySelector('#sensorLocations'),
+  pressure1: document.querySelector('#pressure1'),
+  temperature1: document.querySelector('#temperature1'),
+  density1: document.querySelector('#density1'),
+  p2Ratio: document.querySelector('#p2Ratio'),
+  t2Ratio: document.querySelector('#t2Ratio'),
+  rho2Ratio: document.querySelector('#rho2Ratio'),
+  p3Ratio: document.querySelector('#p3Ratio'),
+  t3Ratio: document.querySelector('#t3Ratio'),
+  rho3Ratio: document.querySelector('#rho3Ratio'),
+  pRefRatio: document.querySelector('#pRefRatio'),
+  tRefRatio: document.querySelector('#tRefRatio'),
+  rhoRefRatio: document.querySelector('#rhoRefRatio'),
 };
 
 const controls = document.querySelector('#controls');
@@ -16,6 +29,13 @@ const warnings = document.querySelector('#warnings');
 const legend = document.querySelector('#legend');
 const summary = document.querySelector('#caseSummary');
 const downloadButton = document.querySelector('#downloadSvg');
+const historySummary = document.querySelector('#historySummary');
+const historyDownloadButton = document.querySelector('#downloadHistorySvg');
+const historyPlots = {
+  pressure: document.querySelector('#pressurePlot'),
+  temperature: document.querySelector('#temperaturePlot'),
+  density: document.querySelector('#densityPlot'),
+};
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const COLORS = {
@@ -25,6 +45,7 @@ const COLORS = {
   reflectedShock: '#f77f00',
   reflectedExpansion: '#4361ee',
 };
+const SENSOR_COLORS = ['#0f766e', '#c2410c', '#6d28d9', '#be123c', '#0369a1', '#4d7c0f'];
 
 function valueOf(input) {
   return Number.parseFloat(input.value);
@@ -45,6 +66,13 @@ function el(name, attributes = {}, text = '') {
   return node;
 }
 
+function parseSensors(value) {
+  return value
+    .split(/[\n,;]+/)
+    .map((entry) => Number.parseFloat(entry.trim()))
+    .filter((entry) => Number.isFinite(entry));
+}
+
 function collectInputs() {
   const data = {
     L1: valueOf(inputs.drivenLength),
@@ -56,18 +84,35 @@ function collectInputs() {
     refShock: valueOf(inputs.refShockSpeed),
     refExpansion: valueOf(inputs.refExpansionSpeed),
     tLimitMs: valueOf(inputs.timeLimit),
+    sensorLocations: parseSensors(inputs.sensorLocations.value),
+    P1: valueOf(inputs.pressure1),
+    T1: valueOf(inputs.temperature1),
+    rho1: valueOf(inputs.density1),
+    p2Ratio: valueOf(inputs.p2Ratio),
+    t2Ratio: valueOf(inputs.t2Ratio),
+    rho2Ratio: valueOf(inputs.rho2Ratio),
+    p3Ratio: valueOf(inputs.p3Ratio),
+    t3Ratio: valueOf(inputs.t3Ratio),
+    rho3Ratio: valueOf(inputs.rho3Ratio),
+    pRefRatio: valueOf(inputs.pRefRatio),
+    tRefRatio: valueOf(inputs.tRefRatio),
+    rhoRefRatio: valueOf(inputs.rhoRefRatio),
     endType: selectedEndType(),
   };
 
   const messages = [];
   for (const [key, value] of Object.entries(data)) {
-    if (key !== 'endType' && (!Number.isFinite(value) || value <= 0)) {
+    if (!['endType', 'sensorLocations'].includes(key) && (!Number.isFinite(value) || value <= 0)) {
       messages.push('All numeric values must be positive.');
       break;
     }
   }
   if (data.Uc >= data.Ws) messages.push('Contact speed should be lower than shock speed for a standard incident shock diagram.');
   if (data.expTail >= data.expHead) messages.push('Expansion tail speed should be lower than expansion head speed to show a fan.');
+  if (data.sensorLocations.length === 0) messages.push('Add at least one sensor location to draw pressure, temperature, and density histories.');
+  if (data.sensorLocations.some((location) => location < -data.L4 || location > data.L1)) {
+    messages.push(`Sensor locations should stay within the tube range ${(-data.L4).toFixed(2)} m to ${data.L1.toFixed(2)} m.`);
+  }
 
   return { data, messages };
 }
@@ -187,6 +232,20 @@ function drawAxes(scale, width, height, margin, events) {
   return axis;
 }
 
+
+function drawSensorMarkers(data, scale, width, margin) {
+  const group = el('g');
+  data.sensorLocations
+    .filter((location) => location >= -data.L4 && location <= data.L1)
+    .forEach((location, index) => {
+      const y = scale.x(location);
+      const color = SENSOR_COLORS[index % SENSOR_COLORS.length];
+      group.append(el('line', { x1: margin.left, y1: y, x2: width - margin.right, y2: y, stroke: color, class: 'sensor-marker' }));
+      group.append(el('text', { x: margin.left + 8, y: y - 6, fill: color, class: 'sensor-label' }, `sensor x=${location} m`));
+    });
+  return group;
+}
+
 function drawFan(fan, scale) {
   const group = el('g');
   const polygonPoints = [
@@ -237,6 +296,158 @@ function updateLegend(items) {
   });
 }
 
+function stateValues(data, ratios) {
+  return {
+    pressure: data.P1 * ratios.p,
+    temperature: data.T1 * ratios.t,
+    density: data.rho1 * ratios.rho,
+  };
+}
+
+function sampleHistoryAtSensor(data, location) {
+  const maxTime = data.tLimitMs / 1000;
+  const reflectedSpeed = data.endType === 'closed' ? data.refShock : data.refExpansion;
+  const times = new Set([0, maxTime]);
+
+  if (location >= 0) {
+    times.add(clamp(location / data.Ws, 0, maxTime));
+    times.add(clamp(location / data.Uc, 0, maxTime));
+    times.add(clamp((data.L1 / data.Ws) + ((data.L1 - location) / reflectedSpeed), 0, maxTime));
+  } else {
+    const headTime = Math.abs(location) / data.expHead;
+    const tailTime = Math.abs(location) / data.expTail;
+    times.add(clamp(Math.min(headTime, tailTime), 0, maxTime));
+    times.add(clamp(Math.max(headTime, tailTime), 0, maxTime));
+  }
+
+  const sortedTimes = [...times].sort((a, b) => a - b);
+  return sortedTimes.map((time) => ({ t: time, ...propertiesAt(data, location, time) }));
+}
+
+function propertiesAt(data, location, time) {
+  const state1 = stateValues(data, { p: 1, t: 1, rho: 1 });
+  const state2 = stateValues(data, { p: data.p2Ratio, t: data.t2Ratio, rho: data.rho2Ratio });
+  const state3 = stateValues(data, { p: data.p3Ratio, t: data.t3Ratio, rho: data.rho3Ratio });
+  const stateR = stateValues(data, { p: data.pRefRatio, t: data.tRefRatio, rho: data.rhoRefRatio });
+
+  if (location >= 0) {
+    const tShock = location / data.Ws;
+    const tContact = location / data.Uc;
+    const reflectedSpeed = data.endType === 'closed' ? data.refShock : data.refExpansion;
+    const tReflected = (data.L1 / data.Ws) + ((data.L1 - location) / reflectedSpeed);
+
+    if (time >= tReflected) return stateR;
+    if (time >= tContact) return state3;
+    if (time >= tShock) return state2;
+    return state1;
+  }
+
+  const headTime = Math.abs(location) / data.expHead;
+  const tailTime = Math.abs(location) / data.expTail;
+  const fanStart = Math.min(headTime, tailTime);
+  const fanEnd = Math.max(headTime, tailTime);
+  if (time <= fanStart) return state1;
+  if (time >= fanEnd) return state3;
+
+  const fraction = (time - fanStart) / (fanEnd - fanStart || 1);
+  return {
+    pressure: state1.pressure + fraction * (state3.pressure - state1.pressure),
+    temperature: state1.temperature + fraction * (state3.temperature - state1.temperature),
+    density: state1.density + fraction * (state3.density - state1.density),
+  };
+}
+
+function stepPath(points, property, xScale, yScale) {
+  if (points.length === 0) return '';
+  let path = `M ${xScale(points[0].t).toFixed(2)} ${yScale(points[0][property]).toFixed(2)}`;
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const point = points[index];
+    path += ` L ${xScale(point.t).toFixed(2)} ${yScale(previous[property]).toFixed(2)}`;
+    path += ` L ${xScale(point.t).toFixed(2)} ${yScale(point[property]).toFixed(2)}`;
+  }
+  return path;
+}
+
+function drawHistoryPlot(targetSvg, histories, property, title, unit, data) {
+  const width = 900;
+  const height = 360;
+  const margin = { top: 42, right: 120, bottom: 58, left: 76 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const allValues = histories.flatMap((history) => history.points.map((point) => point[property]));
+  if (allValues.length === 0) allValues.push(0, 1);
+  const minValue = Math.min(...allValues, 0);
+  const maxValue = Math.max(...allValues, 1);
+  const padding = (maxValue - minValue || 1) * 0.08;
+  const yMin = Math.max(0, minValue - padding);
+  const yMax = maxValue + padding;
+  const xScale = (seconds) => margin.left + (seconds / (data.tLimitMs / 1000)) * plotWidth;
+  const yScale = (value) => margin.top + (1 - (value - yMin) / (yMax - yMin)) * plotHeight;
+
+  targetSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  targetSvg.innerHTML = '';
+  targetSvg.append(el('title', {}, `${title} versus time`));
+  targetSvg.append(el('desc', {}, `${title} plotted against time for selected sensor locations.`));
+
+  for (let i = 0; i <= 5; i += 1) {
+    const time = (i / 5) * (data.tLimitMs / 1000);
+    const x = xScale(time);
+    targetSvg.append(el('line', { x1: x, y1: margin.top, x2: x, y2: height - margin.bottom, class: 'grid-line' }));
+    targetSvg.append(el('text', { x, y: height - margin.bottom + 22, 'text-anchor': 'middle', class: 'tick-label' }, (time * 1000).toFixed(1)));
+  }
+  for (let i = 0; i <= 5; i += 1) {
+    const value = yMin + (i / 5) * (yMax - yMin);
+    const y = yScale(value);
+    targetSvg.append(el('line', { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: 'grid-line' }));
+    targetSvg.append(el('text', { x: margin.left - 10, y: y + 4, 'text-anchor': 'end', class: 'tick-label' }, value.toFixed(property === 'density' ? 2 : 1)));
+  }
+
+  targetSvg.append(el('line', { x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom, class: 'axis-line' }));
+  targetSvg.append(el('line', { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: 'axis-line' }));
+  targetSvg.append(el('text', { x: width / 2, y: 24, 'text-anchor': 'middle', class: 'axis-label' }, title));
+  targetSvg.append(el('text', { x: width / 2, y: height - 16, 'text-anchor': 'middle', class: 'axis-label' }, 'time, t (ms) →'));
+  targetSvg.append(el('text', { x: 23, y: height / 2, transform: `rotate(-90 23 ${height / 2})`, 'text-anchor': 'middle', class: 'axis-label' }, `${unit} ↑`));
+
+  histories.forEach((history, index) => {
+    const color = SENSOR_COLORS[index % SENSOR_COLORS.length];
+    targetSvg.append(el('path', { d: stepPath(history.points, property, xScale, yScale), stroke: color, class: 'history-line' }));
+    const legendY = margin.top + 20 + index * 22;
+    targetSvg.append(el('line', { x1: width - margin.right + 18, y1: legendY - 4, x2: width - margin.right + 46, y2: legendY - 4, stroke: color, class: 'history-line' }));
+    targetSvg.append(el('text', { x: width - margin.right + 54, y: legendY, class: 'tick-label' }, `x=${history.location} m`));
+  });
+}
+
+function renderHistories(data) {
+  const locations = data.sensorLocations.filter((location) => location >= -data.L4 && location <= data.L1);
+  const histories = locations.map((location) => ({
+    location,
+    points: sampleHistoryAtSensor(data, location),
+  }));
+
+  historySummary.textContent = histories.length > 0
+    ? `Plotting ${histories.length} sensor location${histories.length === 1 ? '' : 's'} versus time. Step changes occur when waves cross each sensor.`
+    : 'Add valid sensor locations inside the tube to draw pressure, temperature, and density histories.';
+
+  drawHistoryPlot(historyPlots.pressure, histories, 'pressure', 'Pressure history', 'P (kPa)', data);
+  drawHistoryPlot(historyPlots.temperature, histories, 'temperature', 'Temperature history', 'T (K)', data);
+  drawHistoryPlot(historyPlots.density, histories, 'density', 'Density history', 'ρ (kg/m³)', data);
+}
+
+function downloadHistorySvg() {
+  Object.entries(historyPlots).forEach(([name, plot]) => {
+    const serializer = new XMLSerializer();
+    const source = serializer.serializeToString(plot);
+    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `shock-tube-${name}-history.svg`;
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
 function render() {
   const { data, messages } = collectInputs();
   warnings.textContent = messages.join(' ');
@@ -254,6 +465,7 @@ function render() {
   const scale = scaleFactory(events, width, height, margin);
 
   svg.append(drawAxes(scale, width, height, margin, events));
+  svg.append(drawSensorMarkers(data, scale, width, margin));
   svg.append(drawFan(events.fan, scale));
   events.waves.forEach((wave) => svg.append(drawWave(wave, scale)));
 
@@ -263,6 +475,7 @@ function render() {
     { name: 'Expansion fan', color: COLORS.expansion },
     events.waves[2],
   ]);
+  renderHistories(data);
 }
 
 function downloadSvg() {
@@ -280,4 +493,5 @@ function downloadSvg() {
 controls.addEventListener('input', render);
 controls.addEventListener('change', render);
 downloadButton.addEventListener('click', downloadSvg);
+historyDownloadButton.addEventListener('click', downloadHistorySvg);
 render();

@@ -86,6 +86,72 @@
             <input id="timeLimit" type="number" min="1" step="0.5" value="18" />
           </label>
 
+          <h2>Sensor history inputs</h2>
+          <label>
+            Sensor locations, x (m; comma separated)
+            <textarea id="sensorLocations" rows="3">1.5, 3, 5</textarea>
+          </label>
+
+          <div class="grid three">
+            <label>
+              Initial pressure, P1 (kPa)
+              <input id="pressure1" type="number" min="0.001" step="1" value="101" />
+            </label>
+            <label>
+              Initial temperature, T1 (K)
+              <input id="temperature1" type="number" min="0.001" step="1" value="300" />
+            </label>
+            <label>
+              Initial density, ρ1 (kg/m³)
+              <input id="density1" type="number" min="0.001" step="0.01" value="1.18" />
+            </label>
+          </div>
+
+          <div class="grid three">
+            <label>
+              Post-shock P2/P1
+              <input id="p2Ratio" type="number" min="0.001" step="0.1" value="4.8" />
+            </label>
+            <label>
+              Post-shock T2/T1
+              <input id="t2Ratio" type="number" min="0.001" step="0.05" value="1.7" />
+            </label>
+            <label>
+              Post-shock ρ2/ρ1
+              <input id="rho2Ratio" type="number" min="0.001" step="0.05" value="2.8" />
+            </label>
+          </div>
+
+          <div class="grid three">
+            <label>
+              Contact-region P3/P1
+              <input id="p3Ratio" type="number" min="0.001" step="0.1" value="4.8" />
+            </label>
+            <label>
+              Contact-region T3/T1
+              <input id="t3Ratio" type="number" min="0.001" step="0.05" value="1.25" />
+            </label>
+            <label>
+              Contact-region ρ3/ρ1
+              <input id="rho3Ratio" type="number" min="0.001" step="0.05" value="3.8" />
+            </label>
+          </div>
+
+          <div class="grid three">
+            <label>
+              Reflected-wave PR/P1
+              <input id="pRefRatio" type="number" min="0.001" step="0.1" value="7.2" />
+            </label>
+            <label>
+              Reflected-wave TR/T1
+              <input id="tRefRatio" type="number" min="0.001" step="0.05" value="2.05" />
+            </label>
+            <label>
+              Reflected-wave ρR/ρ1
+              <input id="rhoRefRatio" type="number" min="0.001" step="0.05" value="3.5" />
+            </label>
+          </div>
+
           <div id="warnings" class="warnings" role="status" aria-live="polite"></div>
         </form>
 
@@ -102,6 +168,21 @@
             <desc id="diagramDesc">Time is plotted on the horizontal axis and distance is plotted on the vertical axis increasing upward.</desc>
           </svg>
           <div id="legend" class="legend"></div>
+        </section>
+
+        <section class="panel history-card">
+          <div class="diagram-header">
+            <div>
+              <h2>Sensor pressure, temperature, and density histories</h2>
+              <p id="historySummary">Select one or more sensor x-locations to plot property changes versus time.</p>
+            </div>
+            <button id="downloadHistorySvg" type="button">Download plots SVG</button>
+          </div>
+          <div class="plot-grid">
+            <svg id="pressurePlot" class="history-plot" role="img" aria-label="Pressure variation with time at selected sensor locations"></svg>
+            <svg id="temperaturePlot" class="history-plot" role="img" aria-label="Temperature variation with time at selected sensor locations"></svg>
+            <svg id="densityPlot" class="history-plot" role="img" aria-label="Density variation with time at selected sensor locations"></svg>
+          </div>
         </section>
       </section>
     </main>
