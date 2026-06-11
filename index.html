@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shock Tube x-t Diagram Calculator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Shock tube tool</p>
+          <h1>x-t Diagram Calculator</h1>
+          <p class="lede">
+            Plot shock, contact surface, expansion fan, and end-boundary waves with position on the horizontal axis and time on the vertical axis increasing upward.
+          </p>
+        </div>
+        <div class="axis-note" aria-label="Axis orientation note">
+          <span>x →</span>
+          <strong>t ↑</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="controls" class="panel controls" aria-label="Shock tube inputs">
+          <h2>Inputs</h2>
+          <div class="grid two">
+            <label>
+              Driven length, L1 (m)
+              <input id="drivenLength" type="number" min="0.1" step="0.1" value="6" />
+            </label>
+            <label>
+              Driver length, L4 (m)
+              <input id="driverLength" type="number" min="0.1" step="0.1" value="2" />
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Shock speed, Ws (m/s)
+              <input id="shockSpeed" type="number" min="1" step="1" value="650" />
+            </label>
+            <label>
+              Contact speed, Uc (m/s)
+              <input id="contactSpeed" type="number" min="1" step="1" value="360" />
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Expansion head speed (m/s)
+              <input id="expHeadSpeed" type="number" min="1" step="1" value="520" />
+            </label>
+            <label>
+              Expansion tail speed (m/s)
+              <input id="expTailSpeed" type="number" min="1" step="1" value="250" />
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Closed-end reflected shock speed (m/s)
+              <input id="refShockSpeed" type="number" min="1" step="1" value="420" />
+            </label>
+            <label>
+              Open-end reflected expansion speed (m/s)
+              <input id="refExpansionSpeed" type="number" min="1" step="1" value="330" />
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>Driven-end boundary</legend>
+            <label class="radio-row">
+              <input type="radio" name="endType" value="closed" checked />
+              Closed end: reflected shock
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="endType" value="open" />
+              Open end: reflected expansion wave
+            </label>
+          </fieldset>
+
+          <label>
+            Diagram time limit (ms)
+            <input id="timeLimit" type="number" min="1" step="0.5" value="18" />
+          </label>
+
+          <h2>Sensor history inputs</h2>
+          <label>
+            Sensor locations, x (m; comma separated)
+            <textarea id="sensorLocations" rows="3">1.5, 3, 5</textarea>
+          </label>
+
+          <div class="grid three">
+            <label>
+              Initial pressure, P1 (kPa)
+              <input id="pressure1" type="number" min="0.001" step="1" value="101" />
+            </label>
+            <label>
+              Initial temperature, T1 (K)
+              <input id="temperature1" type="number" min="0.001" step="1" value="300" />
+            </label>
+            <label>
+              Initial density, ρ1 (kg/m³)
+              <input id="density1" type="number" min="0.001" step="0.01" value="1.18" />
+            </label>
+          </div>
+
+          <div class="grid three">
+            <label>
+              Post-shock P2/P1
+              <input id="p2Ratio" type="number" min="0.001" step="0.1" value="4.8" />
+            </label>
+            <label>
+              Post-shock T2/T1
+              <input id="t2Ratio" type="number" min="0.001" step="0.05" value="1.7" />
+            </label>
+            <label>
+              Post-shock ρ2/ρ1
+              <input id="rho2Ratio" type="number" min="0.001" step="0.05" value="2.8" />
+            </label>
+          </div>
+
+          <div class="grid three">
+            <label>
+              Contact-region P3/P1
+              <input id="p3Ratio" type="number" min="0.001" step="0.1" value="4.8" />
+            </label>
+            <label>
+              Contact-region T3/T1
+              <input id="t3Ratio" type="number" min="0.001" step="0.05" value="1.25" />
+            </label>
+            <label>
+              Contact-region ρ3/ρ1
+              <input id="rho3Ratio" type="number" min="0.001" step="0.05" value="3.8" />
+            </label>
+          </div>
+
+          <div class="grid three">
+            <label>
+              Reflected-wave PR/P1
+              <input id="pRefRatio" type="number" min="0.001" step="0.1" value="7.2" />
+            </label>
+            <label>
+              Reflected-wave TR/T1
+              <input id="tRefRatio" type="number" min="0.001" step="0.05" value="2.05" />
+            </label>
+            <label>
+              Reflected-wave ρR/ρ1
+              <input id="rhoRefRatio" type="number" min="0.001" step="0.05" value="3.5" />
+            </label>
+          </div>
+
+          <div id="warnings" class="warnings" role="status" aria-live="polite"></div>
+        </form>
+
+        <section class="panel diagram-card">
+          <div class="diagram-header">
+            <div>
+              <h2>x-t diagram</h2>
+              <p id="caseSummary">Closed end selected: reflected shock is plotted.</p>
+            </div>
+            <div class="button-row">
+              <button id="downloadSvg" type="button">Download SVG</button>
+              <button id="saveDiagramJpg" type="button">Save JPG</button>
+            </div>
+          </div>
+          <svg id="diagram" role="img" aria-labelledby="diagramTitle diagramDesc">
+            <title id="diagramTitle">Shock tube x-t diagram</title>
+            <desc id="diagramDesc">Position is plotted on the horizontal axis increasing rightward and time is plotted on the vertical axis increasing upward.</desc>
+          </svg>
+          <div id="legend" class="legend"></div>
+        </section>
+
+        <section class="panel history-card">
+          <div class="diagram-header">
+            <div>
+              <h2>Sensor pressure, temperature, and density histories</h2>
+              <p id="historySummary">Select one or more sensor x-locations to plot property changes versus time.</p>
+            </div>
+            <div class="button-row">
+              <button id="downloadHistorySvg" type="button">Download plots SVG</button>
+              <button id="saveHistoryJpg" type="button">Save plots JPG</button>
+            </div>
+          </div>
+          <div class="plot-grid">
+            <svg id="pressurePlot" class="history-plot" role="img" aria-label="Pressure variation with time at selected sensor locations"></svg>
+            <svg id="temperaturePlot" class="history-plot" role="img" aria-label="Temperature variation with time at selected sensor locations"></svg>
+            <svg id="densityPlot" class="history-plot" role="img" aria-label="Density variation with time at selected sensor locations"></svg>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
