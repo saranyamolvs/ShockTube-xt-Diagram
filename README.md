@@ -11,7 +11,7 @@ A small browser-based GUI for drawing simplified shock-tube x-t diagrams.
   - **Open end** plots a reflected expansion wave from the driven end and does not plot a reflected shock.
 - Enter one or more comma-separated sensor locations and plot pressure, temperature, and density histories versus time for every selected sensor.
 - Configure initial pressure/temperature/density plus post-shock, contact-region, and reflected-wave property ratios for the time-history plots.
-- Download the current x-t diagram and the sensor-history plots as SVG images.
+- Download the current x-t diagram and the sensor-history plots as SVG images, or save them as JPG images. Browsers that support the File System Access API prompt for a file or folder location; other browsers fall back to standard downloads.
 
 ## Run locally
 

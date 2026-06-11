@@ -161,7 +161,10 @@
               <h2>x-t diagram</h2>
               <p id="caseSummary">Closed end selected: reflected shock is plotted.</p>
             </div>
-            <button id="downloadSvg" type="button">Download SVG</button>
+            <div class="button-row">
+              <button id="downloadSvg" type="button">Download SVG</button>
+              <button id="saveDiagramJpg" type="button">Save JPG</button>
+            </div>
           </div>
           <svg id="diagram" role="img" aria-labelledby="diagramTitle diagramDesc">
             <title id="diagramTitle">Shock tube x-t diagram</title>
@@ -176,7 +179,10 @@
               <h2>Sensor pressure, temperature, and density histories</h2>
               <p id="historySummary">Select one or more sensor x-locations to plot property changes versus time.</p>
             </div>
-            <button id="downloadHistorySvg" type="button">Download plots SVG</button>
+            <div class="button-row">
+              <button id="downloadHistorySvg" type="button">Download plots SVG</button>
+              <button id="saveHistoryJpg" type="button">Save plots JPG</button>
+            </div>
           </div>
           <div class="plot-grid">
             <svg id="pressurePlot" class="history-plot" role="img" aria-label="Pressure variation with time at selected sensor locations"></svg>

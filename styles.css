@@ -131,6 +131,13 @@ button {
   cursor: pointer;
 }
 button:hover { filter: brightness(1.08); }
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.button-row button:nth-child(2) { background: #0f766e; }
 
 #diagram {
   display: block;
@@ -174,6 +181,7 @@ button:hover { filter: brightness(1.08); }
 @media (max-width: 620px) {
   .app-shell { width: min(100% - 20px, 1180px); padding: 20px 0; }
   .hero, .diagram-header { flex-direction: column; }
+  .button-row { justify-content: flex-start; }
   .grid.two { grid-template-columns: 1fr; }
   #diagram { min-height: 420px; }
 }

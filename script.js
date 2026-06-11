@@ -29,8 +29,10 @@ const warnings = document.querySelector('#warnings');
 const legend = document.querySelector('#legend');
 const summary = document.querySelector('#caseSummary');
 const downloadButton = document.querySelector('#downloadSvg');
+const saveDiagramJpgButton = document.querySelector('#saveDiagramJpg');
 const historySummary = document.querySelector('#historySummary');
 const historyDownloadButton = document.querySelector('#downloadHistorySvg');
+const saveHistoryJpgButton = document.querySelector('#saveHistoryJpg');
 const historyPlots = {
   pressure: document.querySelector('#pressurePlot'),
   temperature: document.querySelector('#temperaturePlot'),
@@ -434,6 +436,107 @@ function renderHistories(data) {
   drawHistoryPlot(historyPlots.density, histories, 'density', 'Density history', 'ρ (kg/m³)', data);
 }
 
+
+function collectEmbeddedStyles() {
+  return [...document.styleSheets]
+    .map((sheet) => {
+      const rules = sheet.cssRules ? [...sheet.cssRules] : [];
+      return rules.map((rule) => rule.cssText).join('\n');
+    })
+    .join('\n');
+}
+
+function svgToJpegBlob(targetSvg, quality = 0.94, scale = 2) {
+  const clone = targetSvg.cloneNode(true);
+  const viewBox = (clone.getAttribute('viewBox') || `0 0 ${targetSvg.clientWidth} ${targetSvg.clientHeight}`).split(/\s+/).map(Number);
+  const width = viewBox[2] || targetSvg.clientWidth || 900;
+  const height = viewBox[3] || targetSvg.clientHeight || 650;
+  clone.setAttribute('width', width);
+  clone.setAttribute('height', height);
+  clone.insertBefore(el('style', {}, collectEmbeddedStyles()), clone.firstChild);
+  clone.insertBefore(el('rect', { x: 0, y: 0, width, height, fill: '#fbfdff' }), clone.firstChild);
+
+  const serialized = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#fbfdff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('The browser could not create a JPG image.'));
+      }, 'image/jpeg', quality);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('The browser could not load the SVG for JPG conversion.'));
+    };
+    image.src = url;
+  });
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function saveBlobAs(blob, suggestedName) {
+  if ('showSaveFilePicker' in window) {
+    const handle = await window.showSaveFilePicker({
+      suggestedName,
+      types: [
+        {
+          description: 'JPEG image',
+          accept: { 'image/jpeg': ['.jpg', '.jpeg'] },
+        },
+      ],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
+  }
+
+  triggerDownload(blob, suggestedName);
+}
+
+async function saveJpegFromSvg(targetSvg, suggestedName) {
+  const blob = await svgToJpegBlob(targetSvg);
+  await saveBlobAs(blob, suggestedName);
+}
+
+async function saveHistoryJpegs() {
+  const entries = await Promise.all(
+    Object.entries(historyPlots).map(async ([name, plot]) => [name, await svgToJpegBlob(plot)]),
+  );
+
+  if ('showDirectoryPicker' in window) {
+    const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await Promise.all(entries.map(async ([name, blob]) => {
+      const handle = await directory.getFileHandle(`shock-tube-${name}-history.jpg`, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    }));
+    return;
+  }
+
+  entries.forEach(([name, blob]) => triggerDownload(blob, `shock-tube-${name}-history.jpg`));
+}
+
 function downloadHistorySvg() {
   Object.entries(historyPlots).forEach(([name, plot]) => {
     const serializer = new XMLSerializer();
@@ -493,5 +596,7 @@ function downloadSvg() {
 controls.addEventListener('input', render);
 controls.addEventListener('change', render);
 downloadButton.addEventListener('click', downloadSvg);
+saveDiagramJpgButton.addEventListener('click', () => saveJpegFromSvg(svg, `shock-tube-xt-${selectedEndType()}.jpg`));
 historyDownloadButton.addEventListener('click', downloadHistorySvg);
+saveHistoryJpgButton.addEventListener('click', saveHistoryJpegs);
 render();
