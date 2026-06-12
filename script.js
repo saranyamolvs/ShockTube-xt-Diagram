@@ -131,7 +131,7 @@ function buildEvents(data) {
   const tubeMin = -data.L4;
   const tubeMax = data.L1;
 
-  const reflectedKind = data.endType === 'closed' ? 'Reflected shock' : 'Reflected expansion wave';
+  const reflectedKind = data.endType === 'closed' ? 'Reflected shock' : 'Open-end release expansion';
   const reflectedColor = data.endType === 'closed' ? COLORS.reflectedShock : COLORS.reflectedExpansion;
 
   const waves = [
@@ -555,8 +555,8 @@ function render() {
   const { data, messages } = collectInputs();
   warnings.textContent = messages.join(' ');
   summary.textContent = data.endType === 'closed'
-    ? 'Closed end selected: a reflected shock is plotted from the driven end.'
-    : 'Open end selected: a reflected expansion wave is plotted from the driven end (no reflected shock).';
+    ? 'Closed end selected: the incident shock reflects from the closed wall as a reflected shock.'
+    : 'Open end selected: the incident shock exits to atmosphere; only the pressure-release expansion is plotted back into the tube (no reflected shock).';
 
   const width = 900;
   const height = 650;

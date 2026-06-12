@@ -81,6 +81,7 @@ h2 { margin-bottom: 16px; }
 .grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 label, legend { color: var(--muted); font-weight: 700; font-size: 0.9rem; }
 label { display: grid; gap: 7px; margin-bottom: 16px; }
+.help-text { color: var(--muted); font-size: 0.86rem; line-height: 1.45; margin: 12px 0 0; }
 input[type="number"] {
   width: 100%;
   border: 1px solid #cbd6e6;

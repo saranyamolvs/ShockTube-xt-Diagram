@@ -64,7 +64,7 @@
               <input id="refShockSpeed" type="number" min="1" step="1" value="420" />
             </label>
             <label>
-              Open-end reflected expansion speed (m/s)
+              Open-end pressure-release expansion speed (m/s)
               <input id="refExpansionSpeed" type="number" min="1" step="1" value="330" />
             </label>
           </div>
@@ -77,8 +77,9 @@
             </label>
             <label class="radio-row">
               <input type="radio" name="endType" value="open" />
-              Open end: reflected expansion wave
+              Open end: shock exits to atmosphere + release expansion
             </label>
+            <p class="help-text">Open end means the incident shock reaches the tube end and discharges into atmosphere; the plotted expansion line is the returning pressure-release characteristic, not a reflected shock.</p>
           </fieldset>
 
           <label>
